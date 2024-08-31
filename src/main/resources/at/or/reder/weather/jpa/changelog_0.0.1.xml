@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright 2022 Wolfgang Reder.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!-- 
+  databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+  xmlns:pro="http://www.liquibase.org/xml/ns/pro"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+    http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
+-->
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+		http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+		http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">  
+  <changeSet id="1" author="Wolfgang Reder" failOnError="true" labels="0.0.1">
+    <!--
+    **************************************************************************
+    *** Table : config
+    **************************************************************************
+    -->
+    <createSequence sequenceName="stationdata_seq" />
+    <createTable tableName="stationdata">
+      <column name="id" type="bigint">
+        <constraints primaryKey="true" primaryKeyName="pk_stationdata" nullable="false"/>
+      </column>
+      <column name="stationkey" type="varchar(32)"/>
+      <column name="sampletime" type="datetime">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tempin" type="double precision"/>
+      <column name="tempout" type="double precision"/>
+      <column name="humidityin" type="double precision"/>
+      <column name="humidityout" type="double precision"/>
+      <column name="pressurerel" type="double precision"/>
+      <column name="pressureabs" type="double precision"/>
+      <column name="winddir" type="double precision"/>
+      <column name="windspeed" type="double precision"/>
+      <column name="windgust" type="double precision"/>
+      <column name="maxdailygust" type="double precision"/>
+      <column name="solarradiation" type="double precision"/>
+      <column name="uv" type="int"/>
+      <column name="rainrate" type="double precision"/>
+      <column name="eventrain" type="double precision"/>
+      <column name="hourlyrain" type="double precision"/>
+      <column name="dailyrain" type="double precision"/>
+      <column name="weeklyrain" type="double precision"/>
+      <column name="monthlyrain" type="double precision"/>
+      <column name="yearlyrain" type="double precision"/>
+      <column name="totalrain" type="double precision"/>
+    </createTable>
+    <createIndex tableName="stationdata" indexName="ndx_stationdata_timestamp" unique="true">
+      <column name="sampletime"/>
+      <column name="stationkey"/>
+    </createIndex>
+  </changeSet>
+  <changeSet id="2"  author="Wolfgang Reder" failOnError="true" labels="0.0.1">
+    <createSequence sequenceName="heatpumpdata_seq"/>
+    <createTable tableName="heatpumpdata">
+      <column name="id" type="bigint">
+        <constraints primaryKey="true" primaryKeyName="pk_heatpumpdata" nullable="false"/>
+      </column>
+      <column name="sampletime" type="datetime">
+        <constraints nullable="false"/>
+      </column>
+      <column name="roomTemp" type="double precision"/>
+      <column name="roomTempSet" type="double precision"/>
+      <column name="outdoorTemp" type="double precision"/>
+      <column name="hotWaterTemp" type="double precision"/>        
+    </createTable>
+    <createIndex tableName="heatpumpdata" indexName="ndx_heatpumpdata_timestamp" unique="true">
+      <column name="sampletime"/>
+    </createIndex>
+    <createSequence sequenceName="heatpumpenergy_seq"/>
+    <createTable tableName="heatpumpenergy">
+      <column name="id" type="bigint">
+        <constraints primaryKey="true" primaryKeyName="pk_heatpumpenergy" nullable="false"/>
+      </column>
+      <column name="sampleday" type="date">
+        <constraints nullable="false"/>
+      </column>
+      <column name="earnedEnvironmentEnergyHeating" type="double precision"/>
+      <column name="consumedElectricalEnergyDomesticHotWater" type="double precision"/>
+      <column name="consumedElectricalEnergyHeating" type="double precision"/>
+      <column name="heatGeneratedHeating" type="double precision"/>
+      <column name="earnedEnvironmentEnergyDomesticHotWater" type="double precision"/>
+      <column name="heatGeneratedDomesticHotWater" type="double precision"/>
+    </createTable>
+    <createIndex tableName="heatpumpenergy" indexName="ndx_heatpumpenergy_day" unique="true">
+      <column name="sampleday"/>
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>
+
