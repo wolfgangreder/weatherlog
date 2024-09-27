@@ -52,16 +52,16 @@ public class HeatpumpEnergy
   @Column(name = "sampleday", updatable = false)
   private LocalDate sampleday;
   @Column(name = "earnedEnvironmentEnergyHeating")
-  private double earnedEnvironmentEnergyHeating;
+  private Double earnedEnvironmentEnergyHeating;
   @Column(name = "consumedElectricalEnergyDomesticHotWater")
-  private double consumedElectricalEnergyDomesticHotWater;
+  private Double consumedElectricalEnergyDomesticHotWater;
   @Column(name = "consumedElectricalEnergyHeating")
-  private double consumedElectricalEnergyHeating;
+  private Double consumedElectricalEnergyHeating;
   @Column(name = "heatGeneratedHeating")
-  private double heatGeneratedHeating;
+  private Double heatGeneratedHeating;
   @Column(name = "earnedEnvironmentEnergyDomesticHotWater")
-  private double earnedEnvironmentEnergyDomesticHotWater;
+  private Double earnedEnvironmentEnergyDomesticHotWater;
   @Column(name = "heatGeneratedDomesticHotWater")
-  private double heatGeneratedDomesticHotWater;
+  private Double heatGeneratedDomesticHotWater;
 
 }
