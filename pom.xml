@@ -6,7 +6,7 @@
 
   <groupId>at.or.reder</groupId>
   <artifactId>weatherlog</artifactId>
-  <version>0.0.3-SNAPSHOT</version>
+  <version>0.0.4-SNAPSHOT</version>
   <packaging>war</packaging>
 
   <properties>
@@ -20,9 +20,15 @@
     <lombok.version>1.18.34</lombok.version>
     <poi.version>5.3.0</poi.version>
     <netbeans.version>RELEASE230</netbeans.version>
+    <apache.commons.lang.version>3.17.0</apache.commons.lang.version>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>${apache.commons.lang.version}</version>
+    </dependency>
     <dependency>
       <groupId>jakarta.platform</groupId>
       <artifactId>jakarta.jakartaee-api</artifactId>

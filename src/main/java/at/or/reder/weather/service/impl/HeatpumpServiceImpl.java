@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.logging.Level;
 import lombok.extern.java.Log;
+import org.apache.commons.lang3.StringUtils;
 
 @ApplicationScoped
 @Default
@@ -233,7 +234,9 @@ public class HeatpumpServiceImpl implements HeatpumpService {
   {
     if (index.isPresent()) {
       String part = parts[index.getAsInt()];
-      return WeatherUtils.parseDoubleValue(part);
+      if (!StringUtils.isBlank(part)) {
+        return WeatherUtils.parseDoubleValue(part);
+      }
     }
     return Optional.empty();
   }
