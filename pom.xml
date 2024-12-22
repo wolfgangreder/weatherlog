@@ -14,7 +14,7 @@
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jaybird.version>5.0.6.java11</jaybird.version>
-    <liquibase.version>4.29.2</liquibase.version>
+    <liquibase.version>4.30.0</liquibase.version>
     <jakarta.version>10.0.0</jakarta.version>
     <microprofile.version>7.0</microprofile.version>
     <lombok.version>1.18.34</lombok.version>
