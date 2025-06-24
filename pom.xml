@@ -16,7 +16,7 @@
     <jaybird.version>5.0.8.java11</jaybird.version>
     <liquibase.version>4.32.0</liquibase.version>
     <jakarta.version>11.0.0</jakarta.version>
-    <microprofile.version>7.0</microprofile.version>
+    <microprofile.version>7.1</microprofile.version>
     <poi.version>5.4.1</poi.version>
     <lombok.version>1.18.38</lombok.version>
     <netbeans.version>RELEASE260</netbeans.version>
@@ -90,7 +90,7 @@
       <plugin>
         <groupId>io.openliberty.tools</groupId>
         <artifactId>liberty-maven-plugin</artifactId>
-        <version>3.11.3</version>
+        <version>3.11.4</version>
         <configuration>
           <serverEnvFile>src/main/liberty/config/server.env</serverEnvFile>
           <copyDependencies>
