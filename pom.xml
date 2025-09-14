@@ -13,13 +13,13 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jaybird.version>5.0.8.java11</jaybird.version>
+    <jaybird.version>5.0.9.java11</jaybird.version>
     <liquibase.version>4.33.0</liquibase.version>
     <jakarta.version>11.0.0</jakarta.version>
     <microprofile.version>7.1</microprofile.version>
     <poi.version>5.4.1</poi.version>
+    <netbeans.version>RELEASE270</netbeans.version>
     <lombok.version>1.18.40</lombok.version>
-    <netbeans.version>RELEASE260</netbeans.version>
     <apache.commons.lang.version>3.18.0</apache.commons.lang.version>
   </properties>
 
@@ -90,7 +90,7 @@
       <plugin>
         <groupId>io.openliberty.tools</groupId>
         <artifactId>liberty-maven-plugin</artifactId>
-        <version>3.11.4</version>
+        <version>3.11.5</version>
         <configuration>
           <serverEnvFile>src/main/liberty/config/server.env</serverEnvFile>
           <copyDependencies>
