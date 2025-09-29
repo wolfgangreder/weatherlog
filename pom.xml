@@ -20,7 +20,7 @@
     <poi.version>5.4.1</poi.version>
     <netbeans.version>RELEASE270</netbeans.version>
     <lombok.version>1.18.40</lombok.version>
-    <apache.commons.lang.version>3.18.0</apache.commons.lang.version>
+    <apache.commons.lang.version>3.19.0</apache.commons.lang.version>
   </properties>
 
   <dependencies>
