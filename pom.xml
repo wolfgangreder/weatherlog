@@ -19,7 +19,7 @@
     <microprofile.version>7.1</microprofile.version>
     <poi.version>5.4.1</poi.version>
     <netbeans.version>RELEASE270</netbeans.version>
-    <apache.commons.lang.version>3.19.0</apache.commons.lang.version>
+    <apache.commons.lang.version>3.20.0</apache.commons.lang.version>
     <lombok.version>1.18.42</lombok.version>
   </properties>
 
