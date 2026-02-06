@@ -13,7 +13,7 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jaybird.version>6.0.3</jaybird.version>
+    <jaybird.version>6.0.4</jaybird.version>
     <liquibase.version>4.33.0</liquibase.version>
     <jakarta.version>11.0.0</jakarta.version>
     <microprofile.version>7.1</microprofile.version>
