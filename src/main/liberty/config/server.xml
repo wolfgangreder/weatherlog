@@ -22,10 +22,9 @@
   <variable name="http.port" defaultValue="9080"/>
   <variable name="https.port" defaultValue="9444"/>
   <variable name="debug.port" defaultValue="7777"/>
-  <variable name="firebird.host" defaultValue="localhost"/>
-  <variable name="firebird.port" defaultValue="3050"/>
+  <variable name="firebird.url" defaultValue="jdbc:firebirdsql://192.168.1.19:3051/weather"/>
   <variable name="firebird.user" defaultValue="sysdba"/>
-  <variable name="firebird.pass" defaultValue="masterkey"/>
+  <variable name="firebird.pass" defaultValue="fd66c53b0ce308ac509e"/>
   <!-- This template enables security. To get the full use of all the capabilities, a keystore and user registry are required. -->
 
   <!-- For the keystore, default keys are generated and stored in a keystore. To provide the keystore password, generate an 
@@ -64,13 +63,13 @@
     <jdbcDriver libraryRef="firebirdSQLJDBCLib" 
                 javax.sql.XADataSource="org.firebirdsql.ds.FBXADataSource"/>
     <connectionManager maxPoolSize="10" minPoolSize="2" maxIdleTime="5m"/>
-    <properties charSet="UTF-8" database="${firebird.host}/${firebird.port}:weather" password="${firebird.pass}" userName="${firebird.user}"/>
+    <properties charSet="UTF-8" url="${firebird.url}" password="${firebird.pass}" userName="${firebird.user}"/>
   </dataSource>
   <dataSource id="timerDataSource" jndiName="jdbc/timerDataSource">
     <jdbcDriver libraryRef="firebirdSQLJDBCLib" 
                 javax.sql.XADataSource="org.firebirdsql.ds.FBXADataSource"/>
     <connectionManager maxPoolSize="10" minPoolSize="2" maxIdleTime="5m"/>
-    <properties charSet="UTF-8" database="${firebird.host}/${firebird.port}:weather" password="${firebird.pass}" userName="${firebird.user}"/>
+    <properties charSet="UTF-8" url="${firebird.url}" password="${firebird.pass}" userName="${firebird.user}"/>
   </dataSource>
   <databaseStore id="EJBTimerDatabaseStore" tablePrefix="EJBTimer_" dataSourceRef="timerDataSource" createTables="true"/>
   <persistentExecutor id="defaultEJBPersistentTimerExecutor"

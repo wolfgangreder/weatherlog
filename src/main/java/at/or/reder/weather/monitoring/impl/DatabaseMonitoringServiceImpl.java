@@ -181,7 +181,8 @@ public class DatabaseMonitoringServiceImpl implements DatabaseMonitoringService 
     }
 
     private Optional<FBStatisticsManager> createStatisticsManager() throws JMException, XPathExpressionException {
-        Pattern pattern = Pattern.compile("([a-zA-Z0-9\\.]+)/((\\d+):)?(.*)");
+        // Matches jdbc:firebird[sql]://host[:port]/database
+        Pattern pattern = Pattern.compile("jdbc:firebird(?:sql)?://([^:/]+)(?::(\\d+))?/(.*)");
         Optional<Path> configFile = getServerConfig();
         if (configFile.isEmpty()) {
             return Optional.empty();
@@ -189,7 +190,7 @@ public class DatabaseMonitoringServiceImpl implements DatabaseMonitoringService 
         Document doc = configFile.map(this::createDocumentBuilder).orElse(null);
         XPathFactory xpathFactory = XPathFactory.newInstance();
         XPath path = xpathFactory.newXPath();
-        XPathExpression urlExpression = path.compile("/server/dataSource[@id='weatherdatasource']/properties/@database");
+        XPathExpression urlExpression = path.compile("/server/dataSource[@id='weatherdatasource']/properties/@url");
         XPathExpression passwordExpression = path.compile("/server/dataSource[@id='weatherdatasource']/properties/@password");
         XPathExpression usernameExpression = path.compile("/server/dataSource[@id='weatherdatasource']/properties/@userName");
         XPathExpression charsetExpression = path.compile("/server/dataSource[@id='weatherdatasource']/properties/@charSet");
@@ -210,14 +211,15 @@ public class DatabaseMonitoringServiceImpl implements DatabaseMonitoringService 
             mgr.setUser(username);
             mgr.setPassword(password);
             mgr.setServerName(matcher.group(1));
-            if (matcher.group(3) != null && !matcher.group(3).isBlank()) {
-                mgr.setPortNumber(Integer.parseInt(matcher.group(3)));
+            if (matcher.group(2) != null && !matcher.group(2).isBlank()) {
+                mgr.setPortNumber(Integer.parseInt(matcher.group(2)));
             }
-            mgr.setDatabase(matcher.group(4));
+            mgr.setDatabase(matcher.group(3));
             return Optional.of(mgr);
         } else {
             log.log(Level.SEVERE,
-                    "Url does not match!");
+                    "Url does not match expected JDBC URL format: {0}",
+                    url);
         }
         return Optional.empty();
     }
