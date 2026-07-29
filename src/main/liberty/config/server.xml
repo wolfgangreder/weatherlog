@@ -22,7 +22,9 @@
   <variable name="http.port" defaultValue="9080"/>
   <variable name="https.port" defaultValue="9444"/>
   <variable name="debug.port" defaultValue="7777"/>
-  <variable name="firebird.url" defaultValue="jdbc:firebirdsql://192.168.1.19:3051/weather"/>
+  <variable name="firebird.server" defaultValue="192.168.1.19"/>
+  <variable name="firebird.port"   defaultValue="3051"/>
+  <variable name="firebird.database" defaultValue="weather"/>
   <variable name="firebird.user" defaultValue="sysdba"/>
   <variable name="firebird.pass" defaultValue="fd66c53b0ce308ac509e"/>
   <!-- This template enables security. To get the full use of all the capabilities, a keystore and user registry are required. -->
@@ -59,17 +61,25 @@
     <fileset dir="${shared.resource.dir}/" includes="*.jar" />
   </library>
   <!-- Datasource Configuration -->
-  <dataSource id="weatherdatasource" jndiName="jdbc/weather">
-    <jdbcDriver libraryRef="firebirdSQLJDBCLib" 
-                javax.sql.XADataSource="org.firebirdsql.ds.FBXADataSource"/>
+  <dataSource id="weatherdatasource" jndiName="jdbc/weather" type="javax.sql.ConnectionPoolDataSource">
+    <jdbcDriver libraryRef="firebirdSQLJDBCLib"
+                javax.sql.ConnectionPoolDataSource="org.firebirdsql.ds.FBConnectionPoolDataSource"/>
     <connectionManager maxPoolSize="10" minPoolSize="2" maxIdleTime="5m"/>
-    <properties charSet="UTF-8" url="${firebird.url}" password="${firebird.pass}" userName="${firebird.user}"/>
+    <properties charSet="UTF-8"
+                 serverName="${firebird.server}"
+                 portNumber="${firebird.port}"
+                 databaseName="${firebird.database}"
+                 password="${firebird.pass}" userName="${firebird.user}"/>
   </dataSource>
-  <dataSource id="timerDataSource" jndiName="jdbc/timerDataSource">
-    <jdbcDriver libraryRef="firebirdSQLJDBCLib" 
-                javax.sql.XADataSource="org.firebirdsql.ds.FBXADataSource"/>
+  <dataSource id="timerDataSource" jndiName="jdbc/timerDataSource" type="javax.sql.ConnectionPoolDataSource">
+    <jdbcDriver libraryRef="firebirdSQLJDBCLib"
+                javax.sql.ConnectionPoolDataSource="org.firebirdsql.ds.FBConnectionPoolDataSource"/>
     <connectionManager maxPoolSize="10" minPoolSize="2" maxIdleTime="5m"/>
-    <properties charSet="UTF-8" url="${firebird.url}" password="${firebird.pass}" userName="${firebird.user}"/>
+    <properties charSet="UTF-8"
+                 serverName="${firebird.server}"
+                 portNumber="${firebird.port}"
+                 databaseName="${firebird.database}"
+                 password="${firebird.pass}" userName="${firebird.user}"/>
   </dataSource>
   <databaseStore id="EJBTimerDatabaseStore" tablePrefix="EJBTimer_" dataSourceRef="timerDataSource" createTables="true"/>
   <persistentExecutor id="defaultEJBPersistentTimerExecutor"
