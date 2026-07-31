@@ -39,8 +39,9 @@ group = 'at.or.reder'
 version = project.property('projectVersion')
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 compileJava.options.encoding = 'UTF-8'
