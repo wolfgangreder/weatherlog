@@ -1,3 +1,8 @@
+# Gradle
+build/
+.gradle/
+
+# Maven (legacy)
 target/
 pom.xml.tag
 pom.xml.releaseBackup
@@ -7,8 +12,24 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-# https://github.com/takari/maven-wrapper#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
 /data/
 /.mvn/
 /docs/
+
+# Node / UI
+ui/node_modules/
+ui/dist/
+
+# Generated static resources (produced by npmBuild)
+src/main/resources/META-INF/resources/
+
+# Superpowers brainstorm sessions
+.superpowers/
+
+# Liberty (legacy)
+/src/main/liberty/
+/config/
+
+# Docker / secrets
+.env

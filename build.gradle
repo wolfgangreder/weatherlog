@@ -1,0 +1,77 @@
+plugins {
+    id 'io.quarkus' version '3.37.4'
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:3.37.4")
+
+    // Quarkus extensions
+    implementation 'io.quarkus:quarkus-resteasy-jsonb'
+    implementation 'io.quarkus:quarkus-resteasy-multipart'
+    implementation 'io.quarkus:quarkus-hibernate-orm-panache'
+    implementation 'io.quarkus:quarkus-agroal'
+    implementation 'io.quarkus:quarkus-narayana-jta'
+    implementation 'io.quarkus:quarkus-scheduler'
+    implementation 'io.quarkus:quarkus-micrometer-registry-prometheus'
+    implementation 'io.quarkus:quarkus-smallrye-health'
+
+    // Application
+    implementation 'io.quarkus:quarkus-container-image-docker'
+    implementation 'org.apache.commons:commons-lang3:3.20.0'
+    implementation 'org.firebirdsql.jdbc:jaybird:6.0.5'
+    implementation 'org.hibernate.orm:hibernate-community-dialects'
+    implementation 'io.quarkus:quarkus-liquibase'
+    implementation 'org.liquibase:liquibase-core:5.0.3'
+    implementation 'org.apache.poi:poi:5.5.1'
+
+    // Test
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured'
+    testImplementation 'io.quarkus:quarkus-jdbc-h2'
+}
+
+group = 'at.or.reder'
+version = project.property('projectVersion')
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+// ---- Frontend (Vite / React) ----
+
+def uiDir = file('ui')
+def uiDist = file('src/main/resources/META-INF/resources')
+
+task npmInstall(type: Exec) {
+    description = 'Install UI dependencies'
+    workingDir uiDir
+    commandLine 'npm', 'ci'
+    inputs.file("$uiDir/package-lock.json")
+    outputs.dir("$uiDir/node_modules")
+}
+
+task npmBuild(type: Exec, dependsOn: npmInstall) {
+    description = 'Build React UI with Vite'
+    workingDir uiDir
+    commandLine 'npm', 'run', 'build'
+    inputs.dir("$uiDir/src")
+    inputs.files(
+        "$uiDir/vite.config.ts",
+        "$uiDir/tsconfig.json",
+        "$uiDir/tsconfig.app.json",
+        "$uiDir/index.html",
+        "$uiDir/package.json"
+    )
+    outputs.dir(uiDist)
+}
+
+processResources.dependsOn(npmBuild)

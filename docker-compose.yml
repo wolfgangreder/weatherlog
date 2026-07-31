@@ -1,0 +1,66 @@
+services:
+  # weatherlog application
+  # Connects to external Firebird at automatix.local.reder.or.at.
+  # Requires a .env file (not committed) — copy .env.example and fill in FIREBIRD_PASS.
+  weatherlog:
+    image: docker.io/wolfgangreder/weatherlog:latest
+    container_name: weatherlog
+    environment:
+      QUARKUS_DATASOURCE_WEATHER_JDBC_URL: jdbc:firebirdsql://automatix.local.reder.or.at:3050/weather?charSet=UTF-8
+      QUARKUS_DATASOURCE_WEATHER_USERNAME: sysdba
+      QUARKUS_DATASOURCE_WEATHER_PASSWORD: ${QUARKUS_DATASOURCE_WEATHER_PASSWORD:?Set QUARKUS_DATASOURCE_WEATHER_PASSWORD in .env or environment}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/q/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - weatherlog-network
+
+  # Prometheus — scrapes /q/metrics from the weatherlog container.
+  # Start with: docker compose --profile monitoring up -d
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: weatherlog-prometheus
+    profiles:
+      - monitoring
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - weatherlog-network
+    restart: unless-stopped
+
+  # Grafana — dashboards fed by Prometheus.
+  # Start with: docker compose --profile monitoring up -d
+  # Default credentials: admin / admin
+  grafana:
+    image: grafana/grafana:latest
+    container_name: weatherlog-grafana
+    profiles:
+      - monitoring
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - weatherlog-network
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  weatherlog-network:
+    driver: bridge

@@ -6,7 +6,7 @@
 #   1.  Commit & push current branch (if there is anything pending)
 #   2.  Create release branch  release/<version>
 #   3.  Check out that branch
-#   4.  Strip -SNAPSHOT from project version in pom.xml
+#   4.  Strip -SNAPSHOT from projectVersion in gradle.properties
 #   5.  Clean build + full test suite
 #   6.  Commit version bump & create tag <version>
 #   7.  Push branch and tag to origin
@@ -15,8 +15,8 @@
 #
 # Rollback behaviour:
 #   - If any step from 2 to 6 fails the release branch and tag (if already
-#     created) are deleted locally and pom.xml is restored so the working
-#     tree is left exactly as it was before the script ran.
+#     created) are deleted locally and gradle.properties is restored so the
+#     working tree is left exactly as it was before the script ran.
 #   - Once the branch and tag have been pushed (step 7) they are kept even on
 #     subsequent failures (e.g. a docker push failure), because remote state
 #     is not automatically revertible.
@@ -35,10 +35,9 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-POM="pom.xml"
+GRADLE_PROPS="gradle.properties"
 DOCKER_USER="wolfgangreder"
 DOCKER_REGISTRY="docker.io"
-DOCKER_IMAGE="${DOCKER_USER}/at.or.reder.weatherlog"
 BUILDER_NAME="weatherlog-multiplatform"
 
 # ---------------------------------------------------------------------------
@@ -53,7 +52,7 @@ info() { echo ""; echo "==> $*"; }
 ORIGINAL_BRANCH=""
 BRANCH_CREATED=false
 TAG_CREATED=false
-POM_MODIFIED=false
+PROPS_MODIFIED=false
 
 do_rollback() {
   local exit_code=$?
@@ -67,11 +66,11 @@ do_rollback() {
     git checkout "${ORIGINAL_BRANCH}" 2>/dev/null || true
   fi
 
-  # Restore pom.xml when the change was only in the working tree
+  # Restore gradle.properties when the change was only in the working tree
   # (i.e. modified but not yet committed on the release branch)
-  if ${POM_MODIFIED} && ! ${TAG_CREATED}; then
-    git restore "${POM}" 2>/dev/null || true
-    echo "  Restored ${POM} to snapshot version"
+  if ${PROPS_MODIFIED} && ! ${TAG_CREATED}; then
+    git restore "${GRADLE_PROPS}" 2>/dev/null || true
+    echo "  Restored ${GRADLE_PROPS} to snapshot version"
   fi
   # When TAG_CREATED is true the version bump was already committed; checking
   # out ORIGINAL_BRANCH above already reverted the file, nothing else needed.
@@ -96,12 +95,12 @@ trap 'do_rollback' ERR
 # ---------------------------------------------------------------------------
 # Derive versions
 # ---------------------------------------------------------------------------
-SNAPSHOT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
-[[ -z "${SNAPSHOT_VERSION}" ]] && die "Could not read project.version from ${POM}"
+SNAPSHOT_VERSION=$(grep '^projectVersion=' "${GRADLE_PROPS}" | cut -d= -f2)
+[[ -z "${SNAPSHOT_VERSION}" ]] && die "Could not read projectVersion from ${GRADLE_PROPS}"
 
 RELEASE_VERSION="${SNAPSHOT_VERSION%-SNAPSHOT}"
 [[ "${RELEASE_VERSION}" == "${SNAPSHOT_VERSION}" ]] \
-  && die "project.version '${SNAPSHOT_VERSION}' does not end in -SNAPSHOT – already released?"
+  && die "projectVersion '${SNAPSHOT_VERSION}' does not end in -SNAPSHOT – already released?"
 
 BRANCH="release/${RELEASE_VERSION}"
 TAG="${RELEASE_VERSION}"
@@ -167,24 +166,24 @@ git checkout -b "${BRANCH}"
 BRANCH_CREATED=true
 
 # ---------------------------------------------------------------------------
-# Step 4 – strip -SNAPSHOT from project version in pom.xml
+# Step 4 – strip -SNAPSHOT from projectVersion
 # ---------------------------------------------------------------------------
-info "Step 4: set project.version to '${RELEASE_VERSION}'"
-./mvnw versions:set -DnewVersion="${RELEASE_VERSION}" -DgenerateBackupPoms=false
-POM_MODIFIED=true
-echo "  pom.xml version: $(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)"
+info "Step 4: set projectVersion to '${RELEASE_VERSION}'"
+sed -i "s/^projectVersion=.*/projectVersion=${RELEASE_VERSION}/" "${GRADLE_PROPS}"
+PROPS_MODIFIED=true
+grep '^projectVersion=' "${GRADLE_PROPS}"   # confirm
 
 # ---------------------------------------------------------------------------
 # Step 5 – clean build + full test suite
 # ---------------------------------------------------------------------------
 info "Step 5: clean build and test"
-./mvnw clean package
+./gradlew clean build
 
 # ---------------------------------------------------------------------------
 # Step 6 – commit version bump and create tag
 # ---------------------------------------------------------------------------
 info "Step 6: commit version bump and create tag '${TAG}'"
-git add "${POM}"
+git add "${GRADLE_PROPS}"
 git commit -m "release: ${RELEASE_VERSION}"
 TAG_CREATED=true
 git tag -m "release: ${RELEASE_VERSION}" "${TAG}"
@@ -219,25 +218,18 @@ echo "${DOCKER_TOKEN}" | docker login "${DOCKER_REGISTRY}" \
 
 trap 'echo ""; echo "Logging out from ${DOCKER_REGISTRY}..."; docker logout "${DOCKER_REGISTRY}"' EXIT
 
-# Build the WAR and create the Liberty server directory (includes copying shared
-# resources like the Jaybird JDBC driver to target/liberty/wlp/usr/shared/resources,
-# which the Dockerfile requires). Tests already ran in step 5.
-./mvnw clean package liberty:create -DskipTests
-
 if ! docker buildx inspect "${BUILDER_NAME}" &>/dev/null; then
   echo "  Creating multi-platform buildx builder '${BUILDER_NAME}'..."
   docker buildx create --name "${BUILDER_NAME}" --driver docker-container --bootstrap
 fi
 docker buildx use "${BUILDER_NAME}"
 
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --build-arg VERSION="${RELEASE_VERSION}" \
-  --build-arg REVISION="" \
-  --tag "${DOCKER_IMAGE}:${RELEASE_VERSION}" \
-  --tag "${DOCKER_IMAGE}:latest" \
-  --push \
-  .
+# Tests were already run in step 5 on the same source; skip them here.
+./gradlew clean assemble \
+  -Dquarkus.container-image.build=true \
+  -Dquarkus.container-image.push=true \
+  -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 \
+  "-Dquarkus.container-image.additional-tags=latest,${RELEASE_VERSION}"
 
 # ---------------------------------------------------------------------------
 # Done
@@ -246,4 +238,4 @@ echo ""
 echo "Release ${RELEASE_VERSION} complete!"
 echo "  Branch : ${BRANCH}"
 echo "  Tag    : ${TAG}"
-echo "  Image  : ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${RELEASE_VERSION}"
+echo "  Image  : ${DOCKER_REGISTRY}/${DOCKER_USER}/weatherlog:${RELEASE_VERSION}"

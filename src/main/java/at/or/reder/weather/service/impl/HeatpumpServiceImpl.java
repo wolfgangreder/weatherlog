@@ -1,17 +1,6 @@
 /*
  * Copyright 2024 wolfi.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
  */
 package at.or.reder.weather.service.impl;
 
@@ -23,10 +12,6 @@ import at.or.reder.weather.model.WeatherUtils;
 import at.or.reder.weather.service.HeatpumpService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.NonUniqueResultException;
-import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.io.IOException;
 import java.io.LineNumberReader;
@@ -39,247 +24,194 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.logging.Level;
-import lombok.extern.java.Log;
+import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 
 @ApplicationScoped
 @Default
-@Log
 public class HeatpumpServiceImpl implements HeatpumpService {
 
-  @PersistenceContext(name = "WEATHER")
-  private EntityManager entityManager;
+    private static final Logger LOG = Logger.getLogger(HeatpumpServiceImpl.class.getName());
 
-  @Override
-  public Optional<HeatpumpEnergyRecord> getEnergy(HeatpumpScope scope, LocalDate day)
-  {
-    try {
-      HeatpumpEnergy record = entityManager.createQuery("select hpr from HeatpumpEnergy hpr where hpr.sampleday=?1",
-              HeatpumpEnergy.class)
-              .setParameter(1, day)
-              .getSingleResult();
-      return Optional.ofNullable(switch (scope) {
-        case HEATING ->
-          HeatpumpEnergyRecord.builder().date(record.getSampleday())
-          .energyConsumed(record.getConsumedElectricalEnergyHeating())
-          .energyGenerated(record.getHeatGeneratedHeating()).build();
-        case WATER ->
-          HeatpumpEnergyRecord.builder().date(record.getSampleday())
-          .energyConsumed(record.getConsumedElectricalEnergyDomesticHotWater())
-          .energyGenerated(record.getHeatGeneratedDomesticHotWater()).build();
-        default ->
-          null;
-      });
-    } catch (NoResultException | NonUniqueResultException ex) {
-      log.log(Level.WARNING, "Cannot load energydata for {0}", day.toString());
+    @Override
+    public Optional<HeatpumpEnergyRecord> getEnergy(HeatpumpScope scope, LocalDate day) {
+        HeatpumpEnergy record = HeatpumpEnergy.find("sampleday", day).firstResult();
+        if (record == null) {
+            LOG.log(Level.WARNING, "Cannot load energydata for {0}", day.toString());
+            return Optional.empty();
+        }
+        return Optional.ofNullable(switch (scope) {
+            case HEATING -> new HeatpumpEnergyRecord(
+                    record.getSampleday(),
+                    record.getHeatGeneratedHeating() != null ? record.getHeatGeneratedHeating() : 0d,
+                    record.getConsumedElectricalEnergyHeating() != null ? record.getConsumedElectricalEnergyHeating() : 0d);
+            case WATER -> new HeatpumpEnergyRecord(
+                    record.getSampleday(),
+                    record.getHeatGeneratedDomesticHotWater() != null ? record.getHeatGeneratedDomesticHotWater() : 0d,
+                    record.getConsumedElectricalEnergyDomesticHotWater() != null ? record.getConsumedElectricalEnergyDomesticHotWater() : 0d);
+        });
     }
-    return Optional.empty();
-  }
 
-  private HeatpumpData findHeatpumpData(LocalDateTime sampleTime)
-  {
-    HeatpumpData result;
-    List<HeatpumpData> list = entityManager.createQuery("select hp from HeatpumpData hp where hp.sampletime=?1",
-            HeatpumpData.class)
-            .setParameter(1,
-                    sampleTime)
-            .setMaxResults(1)
-            .getResultList();
-    if (list.isEmpty()) {
-      result = new HeatpumpData();
-      result.setSampletime(sampleTime);
-      entityManager.persist(result);
-    } else {
-      result = list.get(0);
+    @Transactional(Transactional.TxType.REQUIRED)
+    HeatpumpData findOrCreateHeatpumpData(LocalDateTime sampleTime) {
+        List<HeatpumpData> list = HeatpumpData.find("sampletime", sampleTime).page(0, 1).list();
+        if (list.isEmpty()) {
+            HeatpumpData result = new HeatpumpData();
+            result.setSampletime(sampleTime);
+            result.persist();
+            return result;
+        }
+        return list.get(0);
     }
-    return result;
-  }
 
-  private HeatpumpEnergy findHeatpumpEnergy(LocalDate sampleDay)
-  {
-    HeatpumpEnergy result;
-    List<HeatpumpEnergy> list = entityManager.createQuery("select he from HeatpumpEnergy he where he.sampleday=?1",
-            HeatpumpEnergy.class)
-            .setParameter(1,
-                    sampleDay)
-            .setMaxResults(1)
-            .getResultList();
-    if (list.isEmpty()) {
-      result = new HeatpumpEnergy();
-      result.setSampleday(sampleDay);
-      entityManager.persist(result);
-    } else {
-      result = list.get(0);
+    @Transactional(Transactional.TxType.REQUIRED)
+    HeatpumpEnergy findOrCreateHeatpumpEnergy(LocalDate sampleDay) {
+        List<HeatpumpEnergy> list = HeatpumpEnergy.find("sampleday", sampleDay).page(0, 1).list();
+        if (list.isEmpty()) {
+            HeatpumpEnergy result = new HeatpumpEnergy();
+            result.setSampleday(sampleDay);
+            result.persist();
+            return result;
+        }
+        return list.get(0);
     }
-    return result;
-  }
 
-  private Optional<LocalDateTime> parseLocalDateTime(String str)
-  {
-    DateTimeFormatter format = DateTimeFormatter.ofPattern("yyy-MM-dd HH:mm:ss");
-    try {
-      return Optional.of(WeatherUtils.convertToTimezone(LocalDateTime.parse(str,
-              format),
-              ZoneId.of("CET"),
-              ZoneId.of("UTC")));
-    } catch (DateTimeParseException ex) {
-      // do nothing
+    private Optional<LocalDateTime> parseLocalDateTime(String str) {
+        try {
+            return Optional.of(WeatherUtils.convertToTimezone(
+                    LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyy-MM-dd HH:mm:ss")),
+                    ZoneId.of("CET"), ZoneId.of("UTC")));
+        } catch (DateTimeParseException ex) {
+            return Optional.empty();
+        }
     }
-    return Optional.empty();
-  }
 
-  private Optional<LocalDate> parseLocalDate(String str)
-  {
-    DateTimeFormatter format = DateTimeFormatter.ofPattern("yyy-MM-dd HH:mm:ss");
-    try {
-      return Optional.of(LocalDateTime.parse(str,
-              format).toLocalDate());
-    } catch (DateTimeParseException ex) {
-      // do nothing
+    private Optional<LocalDate> parseLocalDate(String str) {
+        try {
+            return Optional.of(LocalDateTime.parse(str,
+                    DateTimeFormatter.ofPattern("yyy-MM-dd HH:mm:ss")).toLocalDate());
+        } catch (DateTimeParseException ex) {
+            return Optional.empty();
+        }
     }
-    return Optional.empty();
-  }
 
-  private OptionalInt findColumnIndex(String[] columns, String columnName)
-  {
-    for (int i = 0; i < columns.length; ++i) {
-      if (columns[i].equals(columnName)) {
-        return OptionalInt.of(i);
-      }
+    private OptionalInt findColumnIndex(String[] columns, String columnName) {
+        for (int i = 0; i < columns.length; ++i) {
+            if (columns[i].equals(columnName)) return OptionalInt.of(i);
+        }
+        return OptionalInt.empty();
     }
-    return OptionalInt.empty();
-  }
 
-  private String readNextNoCommentLine(LineNumberReader reader) throws IOException
-  {
-    String line;
-    while ((line = reader.readLine()) != null) {
-      if (!line.startsWith("#")) {
-        return line;
-      }
+    private String readNextNoCommentLine(LineNumberReader reader) throws IOException {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (!line.startsWith("#")) return line;
+        }
+        return null;
     }
-    return null;
-  }
 
-  @Override
-  @Transactional(Transactional.TxType.REQUIRED)
-  public void insertZoneData(LineNumberReader reader) throws IOException
-  {
-    String line = readNextNoCommentLine(reader);
-    if (line != null) {
-      String parts[] = line.split(";");
-      OptionalInt currentRoomIndex = findColumnIndex(parts, "CurrentRoomTemperature");
-      OptionalInt setpointIndex = findColumnIndex(parts, "RoomTemperatureSetpoint");
-      while ((line = readNextNoCommentLine(reader)) != null) {
-        parts = line.split(";");
-        if (parts.length >= 3) {
-          Optional<LocalDateTime> dt = parseLocalDateTime(parts[0]);
-          if (dt.isPresent()) {
-            Optional<Double> currentRoom = parseDouble(parts, currentRoomIndex);
-            Optional<Double> roomSet = parseDouble(parts, setpointIndex);
-            if (currentRoom.isPresent() && roomSet.isPresent()) {
-              HeatpumpData data = findHeatpumpData(dt.get());
-              data.setRoomTemp(currentRoom.get());
-              data.setRoomTempSet(roomSet.get());
+    Optional<Double> parseDouble(String[] parts, OptionalInt index) {
+        if (index.isPresent()) {
+            String part = parts[index.getAsInt()];
+            if (!StringUtils.isBlank(part)) return WeatherUtils.parseDoubleValue(part);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void insertZoneData(LineNumberReader reader) throws IOException {
+        String line = readNextNoCommentLine(reader);
+        if (line != null) {
+            String[] parts = line.split(";");
+            OptionalInt currentRoomIndex = findColumnIndex(parts, "CurrentRoomTemperature");
+            OptionalInt setpointIndex = findColumnIndex(parts, "RoomTemperatureSetpoint");
+            while ((line = readNextNoCommentLine(reader)) != null) {
+                parts = line.split(";");
+                if (parts.length >= 3) {
+                    Optional<LocalDateTime> dt = parseLocalDateTime(parts[0]);
+                    if (dt.isPresent()) {
+                        Optional<Double> currentRoom = parseDouble(parts, currentRoomIndex);
+                        Optional<Double> roomSet = parseDouble(parts, setpointIndex);
+                        if (currentRoom.isPresent() && roomSet.isPresent()) {
+                            HeatpumpData data = findOrCreateHeatpumpData(dt.get());
+                            data.setRoomTemp(currentRoom.get());
+                            data.setRoomTempSet(roomSet.get());
+                        }
+                    }
+                }
             }
-          }
         }
-      }
     }
-  }
 
-  @Override
-  @Transactional(Transactional.TxType.REQUIRED)
-  public void insertHotWaterData(LineNumberReader reader) throws IOException
-  {
-    String line;
-    while ((line = reader.readLine()) != null) {
-      String parts[] = line.split(";");
-      if (parts.length >= 2) {
-        Optional<LocalDateTime> dt = parseLocalDateTime(parts[0]);
-        if (dt.isPresent()) {
-          Optional<Double> hotWater = WeatherUtils.parseDoubleValue(parts[1]);
-          if (hotWater.isPresent()) {
-            HeatpumpData data = findHeatpumpData(dt.get());
-            data.setHotWaterTemp(hotWater.get());
-          }
-        }
-      }
-    }
-  }
-
-  @Override
-  @Transactional(Transactional.TxType.REQUIRED)
-  public void insertSystemData(LineNumberReader reader) throws IOException
-  {
-    String line = readNextNoCommentLine(reader);
-    if (line != null) {
-      while ((line = readNextNoCommentLine(reader)) != null) {
-        String parts[] = line.split(";");
-        if (parts.length >= 2) {
-          Optional<LocalDateTime> dt = parseLocalDateTime(parts[0]);
-          if (dt.isPresent()) {
-            Optional<Double> outDoor = WeatherUtils.parseDoubleValue(parts[1]);
-            if (outDoor.isPresent()) {
-              HeatpumpData data = findHeatpumpData(dt.get());
-              data.setOutdoorTemp(outDoor.get());
+    @Override
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void insertHotWaterData(LineNumberReader reader) throws IOException {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] parts = line.split(";");
+            if (parts.length >= 2) {
+                Optional<LocalDateTime> dt = parseLocalDateTime(parts[0]);
+                if (dt.isPresent()) {
+                    Optional<Double> hotWater = WeatherUtils.parseDoubleValue(parts[1]);
+                    if (hotWater.isPresent()) {
+                        HeatpumpData data = findOrCreateHeatpumpData(dt.get());
+                        data.setHotWaterTemp(hotWater.get());
+                    }
+                }
             }
-          }
         }
-      }
     }
-  }
 
-  Optional<Double> parseDouble(String[] parts, OptionalInt index)
-  {
-    if (index.isPresent()) {
-      String part = parts[index.getAsInt()];
-      if (!StringUtils.isBlank(part)) {
-        return WeatherUtils.parseDoubleValue(part);
-      }
-    }
-    return Optional.empty();
-  }
-
-  @Override
-  @Transactional(Transactional.TxType.REQUIRED)
-  public void insertEnergyData(LineNumberReader reader) throws IOException
-  {
-    String line = readNextNoCommentLine(reader);
-    if (line != null) {
-      String[] parts = line.split(";");
-      OptionalInt earnedEnvironmentEnergyHeatingIndex = findColumnIndex(parts, "EarnedEnvironmentEnergy:Heating");
-      OptionalInt consumedElectricalEnergyDomesticHotWaterIndex = findColumnIndex(parts,
-              "ConsumedElectricalEnergy:DomesticHotWater");
-      OptionalInt consumedElectricalEnergyHeatingIndex = findColumnIndex(parts, "ConsumedElectricalEnergy:Heating");
-      OptionalInt heatGeneratedHeatingIndex = findColumnIndex(parts, "HeatGenerated:Heating");
-      OptionalInt earnedEnvironmentEnergyDomesticHotWaterIndex = findColumnIndex(parts,
-              "EarnedEnvironmentEnergy:DomesticHotWater");
-      OptionalInt heatGeneratedDomesticHotWaterIndex = findColumnIndex(parts, "HeatGenerated:DomesticHotWatery");
-
-      while ((line = reader.readLine()) != null) {
-        parts = line.split(";");
-        if (parts.length >= 7) {
-          Optional<LocalDate> dt = parseLocalDate(parts[0]);
-          if (dt.isPresent()) {
-            Optional<Double> earnedEnvironmentEnergyHeating = parseDouble(parts, earnedEnvironmentEnergyHeatingIndex);
-            Optional<Double> consumedElectricalEnergyDomesticHotWater = parseDouble(parts,
-                    consumedElectricalEnergyDomesticHotWaterIndex);
-            Optional<Double> consumedElectricalEnergyHeating = parseDouble(parts, consumedElectricalEnergyHeatingIndex);
-            Optional<Double> heatGeneratedHeating = parseDouble(parts, heatGeneratedHeatingIndex);
-            Optional<Double> earnedEnvironmentEnergyDomesticHotWater = parseDouble(parts,
-                    earnedEnvironmentEnergyDomesticHotWaterIndex);
-            Optional<Double> heatGeneratedDomesticHotWater = parseDouble(parts, heatGeneratedDomesticHotWaterIndex);
-            HeatpumpEnergy data = findHeatpumpEnergy(dt.get());
-            data.setConsumedElectricalEnergyDomesticHotWater(consumedElectricalEnergyDomesticHotWater.orElse(null));
-            data.setConsumedElectricalEnergyHeating(consumedElectricalEnergyHeating.orElse(null));
-            data.setEarnedEnvironmentEnergyDomesticHotWater(earnedEnvironmentEnergyDomesticHotWater.orElse(null));
-            data.setEarnedEnvironmentEnergyHeating(earnedEnvironmentEnergyHeating.orElse(null));
-            data.setHeatGeneratedDomesticHotWater(heatGeneratedDomesticHotWater.orElse(null));
-            data.setHeatGeneratedHeating(heatGeneratedHeating.orElse(null));
-          }
+    @Override
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void insertSystemData(LineNumberReader reader) throws IOException {
+        String line = readNextNoCommentLine(reader);
+        if (line != null) {
+            while ((line = readNextNoCommentLine(reader)) != null) {
+                String[] parts = line.split(";");
+                if (parts.length >= 2) {
+                    Optional<LocalDateTime> dt = parseLocalDateTime(parts[0]);
+                    if (dt.isPresent()) {
+                        Optional<Double> outDoor = WeatherUtils.parseDoubleValue(parts[1]);
+                        if (outDoor.isPresent()) {
+                            HeatpumpData data = findOrCreateHeatpumpData(dt.get());
+                            data.setOutdoorTemp(outDoor.get());
+                        }
+                    }
+                }
+            }
         }
-      }
     }
-  }
+
+    @Override
+    @Transactional(Transactional.TxType.REQUIRED)
+    public void insertEnergyData(LineNumberReader reader) throws IOException {
+        String line = readNextNoCommentLine(reader);
+        if (line != null) {
+            String[] parts = line.split(";");
+            OptionalInt earnedEnvironmentEnergyHeatingIndex = findColumnIndex(parts, "EarnedEnvironmentEnergy:Heating");
+            OptionalInt consumedElectricalEnergyDomesticHotWaterIndex = findColumnIndex(parts, "ConsumedElectricalEnergy:DomesticHotWater");
+            OptionalInt consumedElectricalEnergyHeatingIndex = findColumnIndex(parts, "ConsumedElectricalEnergy:Heating");
+            OptionalInt heatGeneratedHeatingIndex = findColumnIndex(parts, "HeatGenerated:Heating");
+            OptionalInt earnedEnvironmentEnergyDomesticHotWaterIndex = findColumnIndex(parts, "EarnedEnvironmentEnergy:DomesticHotWater");
+            OptionalInt heatGeneratedDomesticHotWaterIndex = findColumnIndex(parts, "HeatGenerated:DomesticHotWatery");
+
+            while ((line = reader.readLine()) != null) {
+                parts = line.split(";");
+                if (parts.length >= 7) {
+                    Optional<LocalDate> dt = parseLocalDate(parts[0]);
+                    if (dt.isPresent()) {
+                        HeatpumpEnergy data = findOrCreateHeatpumpEnergy(dt.get());
+                        data.setConsumedElectricalEnergyDomesticHotWater(parseDouble(parts, consumedElectricalEnergyDomesticHotWaterIndex).orElse(null));
+                        data.setConsumedElectricalEnergyHeating(parseDouble(parts, consumedElectricalEnergyHeatingIndex).orElse(null));
+                        data.setEarnedEnvironmentEnergyDomesticHotWater(parseDouble(parts, earnedEnvironmentEnergyDomesticHotWaterIndex).orElse(null));
+                        data.setEarnedEnvironmentEnergyHeating(parseDouble(parts, earnedEnvironmentEnergyHeatingIndex).orElse(null));
+                        data.setHeatGeneratedDomesticHotWater(parseDouble(parts, heatGeneratedDomesticHotWaterIndex).orElse(null));
+                        data.setHeatGeneratedHeating(parseDouble(parts, heatGeneratedHeatingIndex).orElse(null));
+                    }
+                }
+            }
+        }
+    }
 }

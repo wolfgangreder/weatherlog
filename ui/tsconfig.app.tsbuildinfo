@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/api/heatpumpApi.ts","./src/components/HeatpumpUpload.tsx","./src/utils/detectFileType.ts"],"version":"5.9.3"}

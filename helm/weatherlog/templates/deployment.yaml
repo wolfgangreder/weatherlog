@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "weatherlog.fullname" . }}
+  labels:
+    {{- include "weatherlog.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "weatherlog.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "weatherlog.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.prometheus.scrape }}
+        prometheus.io/scrape: "true"
+        prometheus.io/path: {{ .Values.prometheus.path | quote }}
+        prometheus.io/port: {{ .Values.prometheus.port | quote }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "weatherlog.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: FIREBIRD_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "weatherlog.fullname" . }}
+                  key: FIREBIRD_HOST
+            - name: FIREBIRD_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "weatherlog.fullname" . }}
+                  key: FIREBIRD_PORT
+            - name: FIREBIRD_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "weatherlog.fullname" . }}
+                  key: FIREBIRD_DATABASE
+            - name: FIREBIRD_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "weatherlog.fullname" . }}
+                  key: FIREBIRD_USER
+            - name: FIREBIRD_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "weatherlog.fullname" . }}
+                  key: FIREBIRD_PASS
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
