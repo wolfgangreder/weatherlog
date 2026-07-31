@@ -3,7 +3,7 @@ services:
   # Connects to external Firebird at automatix.local.reder.or.at.
   # Requires a .env file (not committed) — copy .env.example and fill in FIREBIRD_PASS.
   weatherlog:
-    image: docker.io/wolfgangreder/weatherlog:latest
+    image: docker.io/wolfgangreder/at.or.reder.weatherlog:latest
     container_name: weatherlog
     environment:
       QUARKUS_DATASOURCE_WEATHER_JDBC_URL: jdbc:firebirdsql://automatix.local.reder.or.at:3050/weather?charSet=UTF-8

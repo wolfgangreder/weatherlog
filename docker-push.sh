@@ -55,4 +55,4 @@ echo "Tags: ${ADDITIONAL_TAGS} (plus version tag from project)"
   -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 \
   -Dquarkus.container-image.additional-tags="${ADDITIONAL_TAGS}"
 
-echo "Done. Image pushed to ${DOCKER_REGISTRY}/${DOCKER_USER}/weatherlog"
+echo "Done. Image pushed to ${DOCKER_REGISTRY}/${DOCKER_USER}/at.or.reder.weatherlog"
