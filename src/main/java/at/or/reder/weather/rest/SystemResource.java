@@ -4,17 +4,13 @@
  */
 package at.or.reder.weather.rest;
 
-import at.or.reder.weather.monitoring.DatabaseMonitoringService;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.io.Reader;
 import java.sql.Connection;
 import java.util.Map;
 import liquibase.Contexts;
@@ -34,9 +30,6 @@ public class SystemResource {
     @DataSource("weather")
     AgroalDataSource ds;
 
-    @Inject
-    DatabaseMonitoringService monitoringService;
-
     @PUT
     @Path("updateDatabaseMetadata")
     public Response updateDatabaseMetadata() throws Exception {
@@ -54,10 +47,4 @@ public class SystemResource {
         return Response.noContent().build();
     }
 
-    @GET
-    @Path("metrics/database")
-    public Response fetchDatabaseMetrics() {
-        Reader reader = monitoringService.fetchDatabaseMetrics();
-        return Response.ok(reader, MediaType.TEXT_PLAIN).build();
-    }
 }

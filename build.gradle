@@ -1,5 +1,5 @@
 plugins {
-    id 'io.quarkus' version '3.37.4'
+    id 'io.quarkus' version '3.38.0'
 }
 
 repositories {
@@ -8,7 +8,7 @@ repositories {
 }
 
 dependencies {
-    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:3.37.4")
+    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:3.38.0")
 
     // Quarkus extensions
     implementation 'io.quarkus:quarkus-resteasy-jsonb'
