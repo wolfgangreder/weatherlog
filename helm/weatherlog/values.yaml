@@ -1,8 +1,8 @@
 replicaCount: 1
 
 image:
-  repository: weatherlog
-  tag: "0.1.0-SNAPSHOT"
+  repository: wolfgangreder/at.or.reder.weatherlog
+  tag: "0.2.0-SNAPSHOT"
   pullPolicy: IfNotPresent
 
 serviceAccount:
@@ -18,19 +18,20 @@ ingress:
   className: ""
   annotations: {}
   hosts:
-    - host: weatherlog.local
+    - host: weather.local.reder.or.at
       paths:
         - path: /
           pathType: Prefix
   tls: []
 
-firebird:
-  host: "192.168.1.19"
-  port: "3051"
-  database: "weather"
-  user: "sysdba"
-  # password: set via --set firebird.password=... or external Secret
-  password: "CHANGEME"
+# Names of pre-existing Secret and ConfigMap in the same namespace.
+# Secret must have keys "username" and "password".
+# ConfigMap must have key "database_url" (full Jaybird JDBC URL).
+externalSecret:
+  name: firebird-secret
+
+externalConfig:
+  name: firebird-config
 
 resources:
   requests:

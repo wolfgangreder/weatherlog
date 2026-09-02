@@ -65,3 +65,8 @@ Failsafe (integration tests) reads `${liberty.var.http.port}` as the HTTP port. 
 - `src/main/resources/META-INF/microprofile-config.properties` — MicroProfile config
 - `src/main/resources/META-INF/persistence.xml` — JPA persistence unit
 - `compose/` — Docker Compose stack and Prometheus config
+
+## Kubernetes / Helm
+
+See [`kubernetes/README.md`](kubernetes/README.md) — includes plain kubectl
+manifests, Helm chart, and example config files.

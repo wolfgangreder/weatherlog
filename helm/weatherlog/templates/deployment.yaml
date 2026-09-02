@@ -30,31 +30,21 @@ spec:
               containerPort: 8080
               protocol: TCP
           env:
-            - name: FIREBIRD_HOST
+            - name: QUARKUS_DATASOURCE_WEATHER_JDBC_URL
               valueFrom:
                 configMapKeyRef:
-                  name: {{ include "weatherlog.fullname" . }}
-                  key: FIREBIRD_HOST
-            - name: FIREBIRD_PORT
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "weatherlog.fullname" . }}
-                  key: FIREBIRD_PORT
-            - name: FIREBIRD_DATABASE
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "weatherlog.fullname" . }}
-                  key: FIREBIRD_DATABASE
-            - name: FIREBIRD_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "weatherlog.fullname" . }}
-                  key: FIREBIRD_USER
-            - name: FIREBIRD_PASS
+                  name: {{ .Values.externalConfig.name }}
+                  key: database_url
+            - name: QUARKUS_DATASOURCE_WEATHER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "weatherlog.fullname" . }}
-                  key: FIREBIRD_PASS
+                  name: {{ .Values.externalSecret.name }}
+                  key: username
+            - name: QUARKUS_DATASOURCE_WEATHER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecret.name }}
+                  key: password
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
