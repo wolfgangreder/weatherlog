@@ -1,0 +1,24 @@
+# Example Helm values override
+# Copy this file, fill in your values, then:
+#   helm upgrade --install weatherlog helm/weatherlog \
+#     -f my-values.yaml --namespace <your-namespace> --create-namespace
+
+image:
+  tag: "<replace-with-tag>"   # see https://hub.docker.com/r/wolfgangreder/at.or.reder.weatherlog/tags
+
+# Pre-existing Secret (keys: username, password) and ConfigMap (key: database_url)
+# in the target namespace — create these first, see configmap.yaml / secret.yaml.
+externalSecret:
+  name: firebird-secret
+
+externalConfig:
+  name: firebird-config
+
+ingress:
+  enabled: true
+  className: "<replace-with-ingressclass>"   # e.g. nginx, traefik
+  hosts:
+    - host: "weather.local.reder.or.at"
+      paths:
+        - path: /
+          pathType: Prefix

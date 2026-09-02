@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weatherlog
+  namespace: <replace-with-namespace>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weatherlog
+  template:
+    metadata:
+      labels:
+        app: weatherlog
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /q/metrics
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: weatherlog
+          image: wolfgangreder/at.or.reder.weatherlog:<replace-with-tag>
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: QUARKUS_DATASOURCE_WEATHER_JDBC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: firebird-config
+                  key: database_url
+            - name: QUARKUS_DATASOURCE_WEATHER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: firebird-secret
+                  key: username
+            - name: QUARKUS_DATASOURCE_WEATHER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: firebird-secret
+                  key: password
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: weatherlog
+  namespace: <replace-with-namespace>
+spec:
+  selector:
+    app: weatherlog
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      name: http
