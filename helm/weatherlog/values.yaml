@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: wolfgangreder/at.or.reder.weatherlog
-  tag: "0.2.0-SNAPSHOT"
+  tag: "0.2.0"
   pullPolicy: IfNotPresent
 
 serviceAccount:
